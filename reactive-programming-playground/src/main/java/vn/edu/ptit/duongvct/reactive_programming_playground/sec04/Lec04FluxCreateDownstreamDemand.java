@@ -10,14 +10,18 @@ public class Lec04FluxCreateDownstreamDemand {
     public static final Logger log = LoggerFactory.getLogger(Lec04FluxCreateDownstreamDemand.class);
 
     public static void main(String[] args) {
+        productOnDemand();
+    }
+    private static void productOnDemand(){
         var subscriber = new SubscriberImpl();
         Flux.<String>create(fluxSink -> {
-            for (int i = 0; i < 10; i++) {
-                var name = Util.faker().name().firstName();
-                log.info("Generated: {}", name);
-                fluxSink.next(name);
-            }
-            fluxSink.complete();
+            fluxSink.onRequest((request) -> {
+                for (int i = 0; i < request && !fluxSink.isCancelled(); i++) {
+                    var name = Util.faker().name().firstName();
+                    log.info("Generated: {}", name);
+                    fluxSink.next(name);
+                }
+            });
         }).subscribe(subscriber);
         Util.sleepSeconds(2);
         subscriber.getSubscription().request(2);
